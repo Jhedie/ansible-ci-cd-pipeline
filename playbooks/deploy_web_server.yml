@@ -6,7 +6,7 @@
     name: Set SSH user for Ubuntu
     ansible.builtin.set_fact:
       ansible_user: ubuntu
-      when: ansible_os_family == "Debian"
+    when: ansible_os_family == "Debian"
 
   tasks:
     - name: Install Nginx Web Server
