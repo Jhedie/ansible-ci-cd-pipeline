@@ -7,7 +7,7 @@ on:
 
 jobs:
   deploy:
-    name: Deploy Ansible Playbook
+    name: Deploy Infrastructure and Configure
     if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     environment: production
@@ -20,15 +20,40 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
           chmod 600 private_key.pem
 
-      - name: Install Ansible
-        shell: bash
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-west-2
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.6.0"
+
+      - name: Terraform Init
         run: |
-          sudo apt update
-          sudo apt install -y ansible
+          cd terraform
+          terraform init
+
+      - name: Terraform Apply
+        run: |
+          cd terraform
+          terraform apply -auto-approve
+          echo "$(terraform output -raw ansible_inventory)" > ../inventory.ini
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ansible
+        run: |
+          python -m pip install --upgrade pip
+          pip install ansible
 
       - name: Run Ansible Playbook
-        env:
-          ANSIBLE_USER: ${{ secrets.ANSIBLE_USER }}
-          ANSIBLE_HOST_KEY_CHECKING: False
         run: |
-          ansible-playbook -i inventory/hosts.ini playbooks/deploy_web_server.yml --private-key private_key.pem -u ${{ secrets.ANSIBLE_USER }}
+          export ANSIBLE_HOST_KEY_CHECKING=False
+          ansible-playbook -i inventory.ini playbooks/deploy_web_server.yml --private-key private_key.pem

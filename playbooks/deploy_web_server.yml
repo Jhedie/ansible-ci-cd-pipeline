@@ -1,4 +1,17 @@
 ---
+- name: Wait for SSH connection
+  hosts: all
+  gather_facts: false
+  tasks:
+    - name: Wait for SSH to be available
+      ansible.builtin.wait_for:
+        host: "{{ inventory_hostname }}"
+        port: 22
+        state: started
+        delay: 10
+        timeout: 300
+      delegate_to: localhost
+
 - name: Install and Configure Nginx
   hosts: all
   become: true
@@ -14,6 +27,7 @@
         update_cache: true
         name: nginx
         state: present
+
     - name: Create index.html
       ansible.builtin.copy:
         dest: "/var/www/html/index.html"
@@ -26,6 +40,7 @@
           </body>
           </html>
         mode: "0644"
+
     - name: Ensure Nginx is running and enabled
       ansible.builtin.service:
         name: nginx
