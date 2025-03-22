@@ -1,7 +1,7 @@
 ---
 - name: Wait for SSH connection
   hosts: all
-  gather_facts: no
+  gather_facts: false
   tasks:
     - name: Wait for SSH to be available
       ansible.builtin.wait_for:
@@ -27,6 +27,7 @@
         update_cache: true
         name: nginx
         state: present
+
     - name: Create index.html
       ansible.builtin.copy:
         dest: "/var/www/html/index.html"
@@ -39,6 +40,7 @@
           </body>
           </html>
         mode: "0644"
+
     - name: Ensure Nginx is running and enabled
       ansible.builtin.service:
         name: nginx
